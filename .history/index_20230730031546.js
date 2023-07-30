@@ -89,20 +89,6 @@ async function run() {
             res.send(result)
         })
 
-
-        //get buyer or seller if has any request for buyer or seller otherwise show all users
-        app.get('/users', async (req, res) => {
-            const query = {}
-            const role = req.query.role;
-            const userQuery = { role: role };
-            const options = await usersCollection.find(query).toArray()
-            if (role) {
-                const result = await usersCollection.find(userQuery).toArray()
-                return res.send(result);
-            }
-            res.send(options)
-        })
-
         /*   //create payment intent give client secret
           app.post('/create-payment-intent', async (req, res) => {
               const booking = req.body;
@@ -140,7 +126,11 @@ async function run() {
             res.send(result)
         }) */
 
-
+        /*  app.get('/bookings', async (req, res) => {
+             const query = {};
+             const options = await paymentsCollection.find(query).toArray()
+             res.send(options)
+         }) */
 
         /*   //add review in database
           app.post('/review', async (req, res) => {
@@ -208,20 +198,20 @@ async function run() {
             res.send({ isAdmin: user?.role === 'admin' })
         })
 
-        //from the users list check that the user is seller
+        //from the users list check that the user is admin or not
         app.get('/users/seller/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            res.send({ isSeller: user?.role === 'seller' })
+            res.send({ isSeller: user?.role === 'admin' })
         })
 
-        //from the users list check that the user is buyer
+        //from the users list check that the user is admin or not
         app.get('/users/buyer/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            res.send({ isBuyer: user?.role === 'buyer' })
+            res.send({ isBuyer: user?.role === 'admin' })
         })
 
         /*  //make admin if user's role is admin then user can make admin 

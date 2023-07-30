@@ -89,17 +89,9 @@ async function run() {
             res.send(result)
         })
 
-
-        //get buyer or seller if has any request for buyer or seller otherwise show all users
         app.get('/users', async (req, res) => {
-            const query = {}
-            const role = req.query.role;
-            const userQuery = { role: role };
-            const options = await usersCollection.find(query).toArray()
-            if (role) {
-                const result = await usersCollection.find(userQuery).toArray()
-                return res.send(result);
-            }
+            const query = {};
+            const options = await paymentsCollection.find(query).toArray()
             res.send(options)
         })
 

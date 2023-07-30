@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const jwt = require('jsonwebtoken');
+// const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 // const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -21,8 +21,7 @@ const client = new MongoClient(uri, { serverApi: { version: ServerApiVersion.v1,
 
 
 async function run() {
-
-    //verify token after getting token from local storage
+    /*//verify token after getting token from local storage
     function verifyJWT(req, res, next) {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -37,35 +36,35 @@ async function run() {
             next();
         })
 
-    }
+    } */
 
     try {
         const categoriesCollection = client.db('resaleMarket').collection('category');
-        const usersCollection = client.db('resaleMarket').collection('users');
 
 
-        //make sure you use verifyAdmin after verifyJWT
-        const verifyAdmin = async (req, res, next) => {
-            const decodedEmail = req.decoded.email;
-            const query = { email: decodedEmail }
-            const user = await usersCollection.findOne(query);
-            if (user?.role !== 'admin') {
-                return res.status(403).send({ message: 'Only admin Access!' })
-            }
-            next();
-        }
 
-        //give token for a user, at first check that the user have in usersCollection
-        app.get('/jwt', async (req, res) => {
-            const email = req.query.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query);
-            if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
-                return res.send({ accessToken: token })
-            }
-            res.status(403).send({ accessToken: '' })
-        })
+        /*  //make sure you use verifyAdmin after verifyJWT
+         const verifyAdmin = async (req, res, next) => {
+             const decodedEmail = req.decoded.email;
+             const query = { email: decodedEmail }
+             const user = await usersCollection.findOne(query);
+             if (user?.role !== 'admin') {
+                 return res.status(403).send({ message: 'Only admin Access!' })
+             }
+             next();
+         } */
+
+        /*   //give token for a user, at first check that the user have in usersCollection
+          app.get('/jwt', async (req, res) => {
+              const email = req.query.email;
+              const query = { email: email }
+              const user = await usersCollection.findOne(query);
+              if (user) {
+                  const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+                  return res.send({ accessToken: token })
+              }
+               res.status(403).send({ accessToken: '' })
+          })*/
 
         //get parlour services
         app.get('/categories', async (req, res) => {
@@ -82,26 +81,12 @@ async function run() {
             res.send(service)
         }) */
 
-        //store users information from sign up page
-        app.post('/users', async (req, res) => {
-            const user = req.body;
-            const result = await usersCollection.insertOne(user);
-            res.send(result)
-        })
-
-
-        //get buyer or seller if has any request for buyer or seller otherwise show all users
-        app.get('/users', async (req, res) => {
-            const query = {}
-            const role = req.query.role;
-            const userQuery = { role: role };
-            const options = await usersCollection.find(query).toArray()
-            if (role) {
-                const result = await usersCollection.find(userQuery).toArray()
-                return res.send(result);
-            }
-            res.send(options)
-        })
+        /*  //store users information from sign up page
+         app.post('/users', async (req, res) => {
+             const user = req.body;
+             const result = await usersCollection.insertOne(user);
+             res.send(result)
+         }) */
 
         /*   //create payment intent give client secret
           app.post('/create-payment-intent', async (req, res) => {
@@ -140,7 +125,11 @@ async function run() {
             res.send(result)
         }) */
 
-
+        /*  app.get('/bookings', async (req, res) => {
+             const query = {};
+             const options = await paymentsCollection.find(query).toArray()
+             res.send(options)
+         }) */
 
         /*   //add review in database
           app.post('/review', async (req, res) => {
@@ -162,7 +151,13 @@ async function run() {
               res.send(options)
           }) */
 
-
+        /*  //from the users list check that the user is admin or not
+         app.get('/users/admin/:email', async (req, res) => {
+             const email = req.params.email;
+             const query = { email: email }
+             const user = await usersCollection.findOne(query)
+             res.send({ isAdmin: user?.role === 'admin' })
+         }) */
 
         /*   //store services in database
           app.post('/addservice', verifyJWT, async (req, res) => {
@@ -186,43 +181,19 @@ async function run() {
              res.send(result)
          }) */
 
-        //make admin 
-        app.put('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
-            const email = req.params.email;
-            const filter = { email: email };
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    role: "admin"
-                }
-            }
-            const result = await usersCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
-        })
-
-        //from the users list check that the user is admin or not
-        app.get('/users/admin/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isAdmin: user?.role === 'admin' })
-        })
-
-        //from the users list check that the user is seller
-        app.get('/users/seller/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isSeller: user?.role === 'seller' })
-        })
-
-        //from the users list check that the user is buyer
-        app.get('/users/buyer/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isBuyer: user?.role === 'buyer' })
-        })
+        /*   //make admin 
+          app.put('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+              const email = req.params.email;
+              const filter = { email: email };
+              const options = { upsert: true };
+              const updatedDoc = {
+                  $set: {
+                      role: "admin"
+                  }
+              }
+              const result = await usersCollection.updateOne(filter, updatedDoc, options)
+              res.send(result);
+          }) */
 
         /*  //make admin if user's role is admin then user can make admin 
          app.put('/approve/admin/:id', async (req, res) => {

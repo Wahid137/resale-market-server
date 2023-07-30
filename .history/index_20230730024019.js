@@ -44,7 +44,7 @@ async function run() {
         const usersCollection = client.db('resaleMarket').collection('users');
 
 
-        //make sure you use verifyAdmin after verifyJWT
+        /* //make sure you use verifyAdmin after verifyJWT
         const verifyAdmin = async (req, res, next) => {
             const decodedEmail = req.decoded.email;
             const query = { email: decodedEmail }
@@ -53,7 +53,7 @@ async function run() {
                 return res.status(403).send({ message: 'Only admin Access!' })
             }
             next();
-        }
+        } */
 
         //give token for a user, at first check that the user have in usersCollection
         app.get('/jwt', async (req, res) => {
@@ -87,20 +87,6 @@ async function run() {
             const user = req.body;
             const result = await usersCollection.insertOne(user);
             res.send(result)
-        })
-
-
-        //get buyer or seller if has any request for buyer or seller otherwise show all users
-        app.get('/users', async (req, res) => {
-            const query = {}
-            const role = req.query.role;
-            const userQuery = { role: role };
-            const options = await usersCollection.find(query).toArray()
-            if (role) {
-                const result = await usersCollection.find(userQuery).toArray()
-                return res.send(result);
-            }
-            res.send(options)
         })
 
         /*   //create payment intent give client secret
@@ -140,7 +126,11 @@ async function run() {
             res.send(result)
         }) */
 
-
+        /*  app.get('/bookings', async (req, res) => {
+             const query = {};
+             const options = await paymentsCollection.find(query).toArray()
+             res.send(options)
+         }) */
 
         /*   //add review in database
           app.post('/review', async (req, res) => {
@@ -187,7 +177,7 @@ async function run() {
          }) */
 
         //make admin 
-        app.put('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+        app.put('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
             const options = { upsert: true };
@@ -206,22 +196,6 @@ async function run() {
             const query = { email: email }
             const user = await usersCollection.findOne(query)
             res.send({ isAdmin: user?.role === 'admin' })
-        })
-
-        //from the users list check that the user is seller
-        app.get('/users/seller/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isSeller: user?.role === 'seller' })
-        })
-
-        //from the users list check that the user is buyer
-        app.get('/users/buyer/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isBuyer: user?.role === 'buyer' })
         })
 
         /*  //make admin if user's role is admin then user can make admin 
