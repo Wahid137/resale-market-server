@@ -43,7 +43,6 @@ async function run() {
         const categoriesCollection = client.db('resaleMarket').collection('category');
         const usersCollection = client.db('resaleMarket').collection('users');
         const productsCollection = client.db('resaleMarket').collection('products');
-        const bookingsCollection = client.db('resaleMarket').collection('bookings');
 
 
         //make sure you use verifyAdmin after verifyJWT
@@ -139,12 +138,23 @@ async function run() {
      
           }) */
 
-        //store payment information and update bookings 
-        app.post('/bookings', async (req, res) => {
-            const booking = req.body;
-            const result = await bookingsCollection.insertOne(booking)
+        /* //store payment information and update bookings 
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const query = {
+                name: payment.treatName,
+                email: payment.email
+            }
+            const alreadyBooked = await paymentsCollection.find(query).toArray()
+            if (alreadyBooked.length) {
+                const message = `You already have booking on ${payment.name}`
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await paymentsCollection.insertOne(payment)
+            //send email about appointment confirmation
+            sendBookingEmail(payment)
             res.send(result)
-        })
+        }) */
 
 
 

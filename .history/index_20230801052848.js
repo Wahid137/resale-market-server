@@ -142,7 +142,9 @@ async function run() {
         //store payment information and update bookings 
         app.post('/bookings', async (req, res) => {
             const booking = req.body;
-            const result = await bookingsCollection.insertOne(booking)
+            const result = await paymentsCollection.insertOne(payment)
+            //send email about appointment confirmation
+            sendBookingEmail(payment)
             res.send(result)
         })
 

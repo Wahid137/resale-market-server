@@ -42,8 +42,6 @@ async function run() {
     try {
         const categoriesCollection = client.db('resaleMarket').collection('category');
         const usersCollection = client.db('resaleMarket').collection('users');
-        const productsCollection = client.db('resaleMarket').collection('products');
-        const bookingsCollection = client.db('resaleMarket').collection('bookings');
 
 
         //make sure you use verifyAdmin after verifyJWT
@@ -76,21 +74,12 @@ async function run() {
             res.send(options)
         })
 
-        //get single service
-        app.get('/category/:type', async (req, res) => {
-            const type = req.params.type;
-            const categoryQuery = { type: type }
-            const categoryProducts = await productsCollection.find(categoryQuery).toArray()
-            res.send(categoryProducts)
-        })
-
-
-        /* //get single 
-        app.get('/category', async (req, res) => {
-            const type = req.query.type;
-            const categoryQuery = { type: type }
-            const categoryProducts = await productsCollection.find(categoryQuery).toArray()
-            res.send(categoryProducts)
+        /* //get single service
+        app.get('/services/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const service = await parlourServicesCollection.findOne(query)
+            res.send(service)
         }) */
 
         //store users information from sign up page
@@ -104,13 +93,7 @@ async function run() {
         //get buyer or seller if has any request for buyer or seller otherwise show all users
         app.get('/users', async (req, res) => {
             const query = {}
-            const email = req.query.email;
             const role = req.query.role;
-            const emailQuery = { email: email }
-            if (email) {
-                const emailOption = await usersCollection.findOne(emailQuery);
-                return res.send(emailOption);
-            }
             const userQuery = { role: role };
             const options = await usersCollection.find(query).toArray()
             if (role) {
@@ -139,12 +122,23 @@ async function run() {
      
           }) */
 
-        //store payment information and update bookings 
-        app.post('/bookings', async (req, res) => {
-            const booking = req.body;
-            const result = await bookingsCollection.insertOne(booking)
+        /* //store payment information and update bookings 
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const query = {
+                name: payment.treatName,
+                email: payment.email
+            }
+            const alreadyBooked = await paymentsCollection.find(query).toArray()
+            if (alreadyBooked.length) {
+                const message = `You already have booking on ${payment.name}`
+                return res.send({ acknowledged: false, message })
+            }
+            const result = await paymentsCollection.insertOne(payment)
+            //send email about appointment confirmation
+            sendBookingEmail(payment)
             res.send(result)
-        })
+        }) */
 
 
 
@@ -170,12 +164,12 @@ async function run() {
 
 
 
-        //store products in database
-        app.post('/dashboard/addproduct', async (req, res) => {
-            const product = req.body;
-            const result = await productsCollection.insertOne(product);
-            res.send(result)
-        })
+        /*   //store services in database
+          app.post('/addservice', verifyJWT, async (req, res) => {
+              const service = req.body;
+              const result = await servicesCollection.insertOne(service);
+              res.send(result)
+          }) */
 
         /*   //get the added services from data database
           app.get('/addservice', async (req, res) => {
@@ -193,7 +187,7 @@ async function run() {
          }) */
 
         //delete user from database
-        app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        app.delete('/users/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(filter)
@@ -208,20 +202,6 @@ async function run() {
             const updatedDoc = {
                 $set: {
                     role: "admin"
-                }
-            }
-            const result = await usersCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
-        })
-
-        //verify admin
-        app.put('/users/verify/:id', verifyJWT, verifyAdmin, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    type: "verified"
                 }
             }
             const result = await usersCollection.updateOne(filter, updatedDoc, options)
