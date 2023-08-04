@@ -146,7 +146,7 @@ async function run() {
         })
 
         //get product by email id from addproduct collection
-        app.get('/dashboard/myproduct', async (req, res) => {
+        app.get('/dashboard/myproduct', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const situation = req.query.situation;
             const adQuery = { situation: situation }

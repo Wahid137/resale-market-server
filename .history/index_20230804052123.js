@@ -28,6 +28,7 @@ async function run() {
             return res.status(401).send({ message: 'unauthorized access' })
         }
         const token = authHeader.split(' ')[1]
+        console.log(token)
         jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
             if (err) {
                 return res.status(403).send({ message: 'forbidden access' })
@@ -69,7 +70,7 @@ async function run() {
         })
 
         //get services
-        app.get('/categories', async (req, res) => {
+        app.get('/categories', verifyJWT, async (req, res) => {
             const query = {}
             const options = await categoriesCollection.find(query).toArray()
             res.send(options)
@@ -147,6 +148,10 @@ async function run() {
 
         //get product by email id from addproduct collection
         app.get('/dashboard/myproduct', async (req, res) => {
+            const allQuery = {}
+            const allResult = await productsCollection.find(allQuery).toArray()
+            res.send(allResult);
+
             const email = req.query.email;
             const situation = req.query.situation;
             const adQuery = { situation: situation }

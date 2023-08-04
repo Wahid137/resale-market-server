@@ -14,6 +14,7 @@ app.use(express.json())
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.gfg0jvx.mongodb.net/?retryWrites=true&w=majority`;
+console.log(uri)
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, { serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true, } });
 
@@ -24,6 +25,7 @@ async function run() {
     //verify token after getting token from local storage
     function verifyJWT(req, res, next) {
         const authHeader = req.headers.authorization;
+        console.log(authHeader)
         if (!authHeader) {
             return res.status(401).send({ message: 'unauthorized access' })
         }
@@ -62,13 +64,13 @@ async function run() {
             const query = { email: email }
             const user = await usersCollection.findOne(query);
             if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN)
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
                 return res.send({ accessToken: token })
             }
             res.status(403).send({ accessToken: '' })
         })
 
-        //get services
+        //get parlour services
         app.get('/categories', async (req, res) => {
             const query = {}
             const options = await categoriesCollection.find(query).toArray()
@@ -84,6 +86,8 @@ async function run() {
         })
 
 
+
+
         //store users information from sign up page
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -93,7 +97,7 @@ async function run() {
 
 
         //get buyer or seller if has any request for buyer or seller otherwise show all users
-        app.get('/users', verifyJWT, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const query = {}
             const email = req.query.email;
             const role = req.query.role;
@@ -113,7 +117,7 @@ async function run() {
 
 
         //store payment information and update bookings 
-        app.post('/bookings', async (req, res) => {
+        app.post('/bookings', verifyJWT, async (req, res) => {
             const booking = req.body;
             const query = {
                 productName: booking.productName,
@@ -130,8 +134,12 @@ async function run() {
 
 
         //get store product by email address
-        app.get('/dashboard/myorders', verifyJWT, async (req, res) => {
+        app.get('/dashboard/myproduct', verifyJWT, async (req, res) => {
             const email = req.query.email;
+            const decodedEmail = req.decoded.email;
+            if (decodedEmail !== email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
             const query = { email: email }
             const result = await bookingsCollection.find(query).toArray()
             res.send(result)
@@ -145,39 +153,9 @@ async function run() {
             res.send(result)
         })
 
-        //get product by email id from addproduct collection
-        app.get('/dashboard/myproduct', async (req, res) => {
-            const email = req.query.email;
-            const situation = req.query.situation;
-            const adQuery = { situation: situation }
-            if (situation) {
-                const options = await productsCollection.find(adQuery).toArray()
-                return res.send(options)
-            }
-            const query = { email: email }
-            const result = await productsCollection.find(query).toArray()
-            res.send(result)
-        })
-
-
-
-        //update advertise field
-        app.put('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    situation: "advertised"
-                }
-            }
-            const result = await productsCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
-
-        })
 
         //store products in database
-        app.post('/dashboard/addproduct', async (req, res) => {
+        app.post('/dashboard/addproduct', verifyJWT, async (req, res) => {
             //insert product
             const product = req.body;
             const result = await productsCollection.insertOne(product);
@@ -197,14 +175,6 @@ async function run() {
             }
             const finalResult = await productsCollection.updateMany(filter, updatedDoc, options)
             res.send(finalResult)
-        })
-
-        //delete product from database
-        app.delete('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const result = await productsCollection.deleteOne(filter)
-            res.send(result)
         })
 
 
@@ -253,7 +223,7 @@ async function run() {
         })
 
         //from the users list check that the user is seller
-        app.get('/users/seller/:email', async (req, res) => {
+        app.get('/users/seller/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const user = await usersCollection.findOne(query)
@@ -261,7 +231,7 @@ async function run() {
         })
 
         //from the users list check that the user is buyer
-        app.get('/users/buyer/:email', async (req, res) => {
+        app.get('/users/buyer/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const user = await usersCollection.findOne(query)

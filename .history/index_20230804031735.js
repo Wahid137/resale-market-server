@@ -24,10 +24,12 @@ async function run() {
     //verify token after getting token from local storage
     function verifyJWT(req, res, next) {
         const authHeader = req.headers.authorization;
+        console.log(authHeader)
         if (!authHeader) {
             return res.status(401).send({ message: 'unauthorized access' })
         }
         const token = authHeader.split(' ')[1]
+        console.log(token)
         jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
             if (err) {
                 return res.status(403).send({ message: 'forbidden access' })
@@ -65,11 +67,12 @@ async function run() {
                 const token = jwt.sign({ email }, process.env.ACCESS_TOKEN)
                 return res.send({ accessToken: token })
             }
+            console.log(process.env.ACCESS_TOKEN)
             res.status(403).send({ accessToken: '' })
         })
 
         //get services
-        app.get('/categories', async (req, res) => {
+        app.get('/categories', verifyJWT, async (req, res) => {
             const query = {}
             const options = await categoriesCollection.find(query).toArray()
             res.send(options)
@@ -146,132 +149,125 @@ async function run() {
         })
 
         //get product by email id from addproduct collection
-        app.get('/dashboard/myproduct', async (req, res) => {
+        app.get('/dashboard/myproduct', verifyJWT, async (req, res) => {
             const email = req.query.email;
-            const situation = req.query.situation;
-            const adQuery = { situation: situation }
-            if (situation) {
-                const options = await productsCollection.find(adQuery).toArray()
-                return res.send(options)
-            }
             const query = { email: email }
             const result = await productsCollection.find(query).toArray()
             res.send(result)
         })
 
 
-
         //update advertise field
-        app.put('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
+        app.put('/dashboard/addproduct', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true };
             const updatedDoc = {
                 $set: {
-                    situation: "advertised"
-                }
+                    : "advertised"
+        }
             }
             const result = await productsCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
+    res.send(result);
 
-        })
+})
 
-        //store products in database
-        app.post('/dashboard/addproduct', async (req, res) => {
-            //insert product
-            const product = req.body;
-            const result = await productsCollection.insertOne(product);
+//store products in database
+app.post('/dashboard/addproduct', async (req, res) => {
+    //insert product
+    const product = req.body;
+    const result = await productsCollection.insertOne(product);
 
-            //get user info
-            const query = { email: product.email }
-            const usersOption = await usersCollection.findOne(query)
+    //get user info
+    const query = { email: product.email }
+    const usersOption = await usersCollection.findOne(query)
 
-            const email = product.email;
-            const filter = { email: email };
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    userName: usersOption.name,
-                    userType: usersOption.type
-                }
-            }
-            const finalResult = await productsCollection.updateMany(filter, updatedDoc, options)
-            res.send(finalResult)
-        })
+    const email = product.email;
+    const filter = { email: email };
+    const options = { upsert: true };
+    const updatedDoc = {
+        $set: {
+            userName: usersOption.name,
+            userType: usersOption.type
+        }
+    }
+    const finalResult = await productsCollection.updateMany(filter, updatedDoc, options)
+    res.send(finalResult)
+})
 
-        //delete product from database
-        app.delete('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const result = await productsCollection.deleteOne(filter)
-            res.send(result)
-        })
+//delete product from database
+app.delete('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }
+    const result = await productsCollection.deleteOne(filter)
+    res.send(result)
+})
 
 
-        //delete user from database
-        app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const result = await usersCollection.deleteOne(filter)
-            res.send(result)
-        })
+//delete user from database
+app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }
+    const result = await usersCollection.deleteOne(filter)
+    res.send(result)
+})
 
-        //make admin 
-        app.put('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
-            const email = req.params.email;
-            const filter = { email: email };
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    role: "admin"
-                }
-            }
-            const result = await usersCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
-        })
+//make admin 
+app.put('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+    const email = req.params.email;
+    const filter = { email: email };
+    const options = { upsert: true };
+    const updatedDoc = {
+        $set: {
+            role: "admin"
+        }
+    }
+    const result = await usersCollection.updateOne(filter, updatedDoc, options)
+    res.send(result);
+})
 
-        //verify admin
-        app.put('/users/verify/:id', verifyJWT, verifyAdmin, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    type: "verified"
-                }
-            }
-            const result = await usersCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
-        })
+//verify admin
+app.put('/users/verify/:id', verifyJWT, verifyAdmin, async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }
+    const options = { upsert: true };
+    const updatedDoc = {
+        $set: {
+            type: "verified"
+        }
+    }
+    const result = await usersCollection.updateOne(filter, updatedDoc, options)
+    res.send(result);
+})
 
-        //from the users list check that the user is admin or not
-        app.get('/users/admin/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isAdmin: user?.role === 'admin' })
-        })
+//from the users list check that the user is admin or not
+app.get('/users/admin/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email }
+    const user = await usersCollection.findOne(query)
+    res.send({ isAdmin: user?.role === 'admin' })
+})
 
-        //from the users list check that the user is seller
-        app.get('/users/seller/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isSeller: user?.role === 'seller' })
-        })
+//from the users list check that the user is seller
+app.get('/users/seller/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email }
+    const user = await usersCollection.findOne(query)
+    res.send({ isSeller: user?.role === 'seller' })
+})
 
-        //from the users list check that the user is buyer
-        app.get('/users/buyer/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const user = await usersCollection.findOne(query)
-            res.send({ isBuyer: user?.role === 'buyer' })
-        })
+//from the users list check that the user is buyer
+app.get('/users/buyer/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email }
+    const user = await usersCollection.findOne(query)
+    res.send({ isBuyer: user?.role === 'buyer' })
+})
 
     }
     finally {
 
-    }
+}
 }
 run().catch(console.dir);
 

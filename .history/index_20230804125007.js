@@ -24,6 +24,7 @@ async function run() {
     //verify token after getting token from local storage
     function verifyJWT(req, res, next) {
         const authHeader = req.headers.authorization;
+        console.log(authHeader)
         if (!authHeader) {
             return res.status(401).send({ message: 'unauthorized access' })
         }
@@ -69,7 +70,7 @@ async function run() {
         })
 
         //get services
-        app.get('/categories', async (req, res) => {
+        app.get('/categories', verifyJWT, async (req, res) => {
             const query = {}
             const options = await categoriesCollection.find(query).toArray()
             res.send(options)
@@ -146,18 +147,28 @@ async function run() {
         })
 
         //get product by email id from addproduct collection
-        app.get('/dashboard/myproduct', async (req, res) => {
+        app.get('/dashboard/myproduct', verifyJWT, async (req, res) => {
+            const totalQuery = {}
             const email = req.query.email;
             const situation = req.query.situation;
+            const query = { email: email }
             const adQuery = { situation: situation }
+
             if (situation) {
                 const options = await productsCollection.find(adQuery).toArray()
                 return res.send(options)
             }
-            const query = { email: email }
-            const result = await productsCollection.find(query).toArray()
-            res.send(result)
+
+            if (query) {
+                const result = await productsCollection.find(query).toArray()
+                res.send(result)
+
+            }
+
+            const totalResult = await productsCollection.find(totalQuery).toArray()
+            res.send(totalResult)
         })
+
 
 
 

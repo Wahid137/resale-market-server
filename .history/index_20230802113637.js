@@ -14,6 +14,7 @@ app.use(express.json())
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.gfg0jvx.mongodb.net/?retryWrites=true&w=majority`;
+console.log(uri)
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, { serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true, } });
 
@@ -62,13 +63,13 @@ async function run() {
             const query = { email: email }
             const user = await usersCollection.findOne(query);
             if (user) {
-                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN)
+                const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
                 return res.send({ accessToken: token })
             }
             res.status(403).send({ accessToken: '' })
         })
 
-        //get services
+        //get parlour services
         app.get('/categories', async (req, res) => {
             const query = {}
             const options = await categoriesCollection.find(query).toArray()
@@ -84,6 +85,14 @@ async function run() {
         })
 
 
+        /* //get single 
+        app.get('/category', async (req, res) => {
+            const type = req.query.type;
+            const categoryQuery = { type: type }
+            const categoryProducts = await productsCollection.find(categoryQuery).toArray()
+            res.send(categoryProducts)
+        }) */
+
         //store users information from sign up page
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -93,7 +102,7 @@ async function run() {
 
 
         //get buyer or seller if has any request for buyer or seller otherwise show all users
-        app.get('/users', verifyJWT, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const query = {}
             const email = req.query.email;
             const role = req.query.role;
@@ -111,102 +120,80 @@ async function run() {
             res.send(options)
         })
 
+        /*   //create payment intent give client secret
+          app.post('/create-payment-intent', async (req, res) => {
+              const booking = req.body;
+              const price = booking.price;
+              const amount = price * 100;
+     
+              const paymentIntent = await stripe.paymentIntents.create({
+                  currency: 'usd',
+                  amount: amount,
+                  "payment_method_types": [
+                      "card"
+                  ]
+              });
+              res.send({
+                  clientSecret: paymentIntent.client_secret,
+              });
+     
+          }) */
 
         //store payment information and update bookings 
         app.post('/bookings', async (req, res) => {
             const booking = req.body;
-            const query = {
-                productName: booking.productName,
-                email: booking.email
-            }
-            const alreadyBooked = await bookingsCollection.find(query).toArray()
-            if (alreadyBooked.length) {
-                const message = `You already have booking on ${booking.productName}`
-                return res.send({ acknowledged: false, message })
-            }
             const result = await bookingsCollection.insertOne(booking)
             res.send(result)
         })
 
 
-        //get store product by email address
-        app.get('/dashboard/myorders', verifyJWT, async (req, res) => {
-            const email = req.query.email;
-            const query = { email: email }
-            const result = await bookingsCollection.find(query).toArray()
-            res.send(result)
-        })
 
-        //delete booking from database
-        app.delete('/booking/:id', verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const result = await bookingsCollection.deleteOne(filter)
-            res.send(result)
-        })
+        /*   //add review in database
+          app.post('/review', async (req, res) => {
+              const review = req.body;
+              const result = await reviewsCollection.insertOne(review);
+              res.send(result)
+     
+          }) */
 
-        //get product by email id from addproduct collection
-        app.get('/dashboard/myproduct', async (req, res) => {
-            const email = req.query.email;
-            const situation = req.query.situation;
-            const adQuery = { situation: situation }
-            if (situation) {
-                const options = await productsCollection.find(adQuery).toArray()
-                return res.send(options)
-            }
-            const query = { email: email }
-            const result = await productsCollection.find(query).toArray()
-            res.send(result)
-        })
+        /*   //get parlour booking and payment services
+          app.get('/payments', verifyJWT, async (req, res) => {
+              const email = req.query.email;
+              const decodedEmail = req.decoded.email;
+              if (decodedEmail !== email) {
+                  return res.status(403).send({ message: 'forbidden access' })
+              }
+              const query = { email: email }
+              const options = await paymentsCollection.find(query).toArray()
+              res.send(options)
+          }) */
 
 
-
-        //update advertise field
-        app.put('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    situation: "advertised"
-                }
-            }
-            const result = await productsCollection.updateOne(filter, updatedDoc, options)
-            res.send(result);
-
-        })
 
         //store products in database
         app.post('/dashboard/addproduct', async (req, res) => {
-            //insert product
             const product = req.body;
             const result = await productsCollection.insertOne(product);
-
-            //get user info
             const query = { email: product.email }
             const usersOption = await usersCollection.findOne(query)
-
-            const email = product.email;
-            const filter = { email: email };
-            const options = { upsert: true };
-            const updatedDoc = {
-                $set: {
-                    userName: usersOption.name,
-                    userType: usersOption.type
-                }
-            }
-            const finalResult = await productsCollection.updateMany(filter, updatedDoc, options)
-            res.send(finalResult)
-        })
-
-        //delete product from database
-        app.delete('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
-            const result = await productsCollection.deleteOne(filter)
+            res.send(usersOption)
             res.send(result)
         })
 
+        /*   //get the added services from data database
+          app.get('/addservice', async (req, res) => {
+              const query = {}
+              const options = await servicesCollection.find(query).toArray()
+              res.send(options)
+          }) */
+
+        /*  //delete service from database
+         app.delete('/service/:id', verifyJWT, verifyAdmin, async (req, res) => {
+             const id = req.params.id;
+             const filter = { _id: new ObjectId(id) }
+             const result = await servicesCollection.deleteOne(filter)
+             res.send(result)
+         }) */
 
         //delete user from database
         app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
@@ -267,6 +254,20 @@ async function run() {
             const user = await usersCollection.findOne(query)
             res.send({ isBuyer: user?.role === 'buyer' })
         })
+
+        /*  //make admin if user's role is admin then user can make admin 
+         app.put('/approve/admin/:id', async (req, res) => {
+             const id = req.params.id;
+             const filter = { _id: new ObjectId(id) }
+             const options = { upsert: true };
+             const updatedDoc = {
+                 $set: {
+                     approve: 'true'
+                 }
+             }
+             const result = await paymentsCollection.updateOne(filter, updatedDoc, options)
+             res.send(result)
+         }) */
 
     }
     finally {

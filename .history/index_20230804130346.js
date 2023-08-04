@@ -24,10 +24,12 @@ async function run() {
     //verify token after getting token from local storage
     function verifyJWT(req, res, next) {
         const authHeader = req.headers.authorization;
+        console.log(authHeader)
         if (!authHeader) {
             return res.status(401).send({ message: 'unauthorized access' })
         }
         const token = authHeader.split(' ')[1]
+        console.log(token)
         jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
             if (err) {
                 return res.status(403).send({ message: 'forbidden access' })
@@ -65,13 +67,21 @@ async function run() {
                 const token = jwt.sign({ email }, process.env.ACCESS_TOKEN)
                 return res.send({ accessToken: token })
             }
+            console.log(process.env.ACCESS_TOKEN)
             res.status(403).send({ accessToken: '' })
         })
 
         //get services
-        app.get('/categories', async (req, res) => {
+        app.get('/categories', verifyJWT, async (req, res) => {
             const query = {}
             const options = await categoriesCollection.find(query).toArray()
+            res.send(options)
+        })
+
+        //get services
+        app.get('/products', verifyJWT, async (req, res) => {
+            const query = {}
+            const options = await productsCollection.find(query).toArray()
             res.send(options)
         })
 
@@ -146,7 +156,7 @@ async function run() {
         })
 
         //get product by email id from addproduct collection
-        app.get('/dashboard/myproduct', async (req, res) => {
+        app.get('/dashboard/myproduct', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const situation = req.query.situation;
             const adQuery = { situation: situation }
@@ -159,7 +169,7 @@ async function run() {
             res.send(result)
         })
 
-
+        app.get('/products', asy)
 
         //update advertise field
         app.put('/dashboard/addproduct/:id', verifyJWT, async (req, res) => {
